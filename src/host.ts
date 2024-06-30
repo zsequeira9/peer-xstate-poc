@@ -1,4 +1,5 @@
 import { DataConnection, Peer } from 'peerjs'
+import { ClientMessage, HostMessage } from './message';
 
 class Host {
     peer: Peer | undefined = undefined;
@@ -16,7 +17,8 @@ class Host {
             console.log("Connected to: " + connection.peer);
             this.connections.push(connection);
             connection.on('data', (data) => {
-                console.log(data + " Data recieved");
+                const message = data as ClientMessage;
+                this.receive(message);
             })
         });
     
@@ -31,6 +33,16 @@ class Host {
         this.peer.on('error', (err) => {
             console.log(err);
         });
+    }
+
+    send(data: HostMessage) {
+        this.connections.forEach((connection) => {
+            connection.send(data);
+        })
+    }
+
+    receive(message: ClientMessage) {
+        console.log(message);
     }
 }
 

@@ -1,4 +1,5 @@
 import { DataConnection, Peer } from 'peerjs'
+import { ClientMessage, HostMessage } from './message';
 
 class Client {
     peer: Peer | undefined = undefined;
@@ -47,7 +48,8 @@ class Client {
         });
     
         this.connection?.on('data', (data) => {
-            console.log(data);
+            const message = data as HostMessage;
+            this.receive(message);
         });
         this.connection?.on('close', () => {
             console.log("connection closed")
@@ -55,13 +57,17 @@ class Client {
     
     }
     
-    send(data: string) {
+    send(data: ClientMessage) {
         if (this.connection && this.connection.open) {
             this.connection.send(data);
             console.log(data + " data sent");
         } else {
             console.log('Connection is closed');
         }
+    }
+
+    receive(message: HostMessage) {
+        console.log(message);
     }
     
 }
