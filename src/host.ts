@@ -15,11 +15,11 @@ class Host {
     
         this.peer.on('connection', (connection: DataConnection) => {
             console.log("Connected to: " + connection.peer);
-            this.connections.push(connection);
             connection.on('data', (data) => {
                 const message = data as ClientMessage;
                 this.receive(message);
             })
+            this.connections.push(connection);
         });
     
         this.peer.on('disconnected', () => {

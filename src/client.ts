@@ -34,7 +34,9 @@ class Client {
         });
     }
     
-    join(hostId: string) {
+    join(hostId: string, name: string) {
+        console.log("me", this.connection)
+        console.log("host", hostId);
         if (this.connection) {
             this.connection.close();
         }
@@ -44,7 +46,7 @@ class Client {
         });
     
         this.connection?.on('open', () => {
-            console.log("Connected to: " + this.connection?.peer);
+            console.log("Client connected to: " + this.connection?.peer);
         });
     
         this.connection?.on('data', (data) => {
@@ -52,9 +54,10 @@ class Client {
             this.receive(message);
         });
         this.connection?.on('close', () => {
-            console.log("connection closed")
+            console.log("Client connection closed")
         });
-    
+
+        console.log("me connection", this.connection);
     }
     
     send(data: ClientMessage) {
