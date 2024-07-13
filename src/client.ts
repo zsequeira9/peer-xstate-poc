@@ -1,10 +1,13 @@
 import { DataConnection, Peer } from 'peerjs'
-import { ClientMessage, HostMessage } from './message';
+import { ClientMessage, ControllerResetMessage, HostMessage, JoinGameMessage } from './message';
+import { Controller } from './controller';
 
 class Client {
-    peer: Peer | undefined = undefined;
+    peer: Peer | undefined;
 
-    connection: DataConnection | undefined = undefined;
+    connection: DataConnection | undefined;
+
+    controller: Controller | undefined;
 
     initialize() {
         this.peer = new Peer();
@@ -35,8 +38,8 @@ class Client {
     }
     
     join(hostId: string, name: string) {
-        console.log("me", this.connection)
-        console.log("host", hostId);
+        console.log("Client connection upon join", this.connection)
+        console.log("Joining host with id: ", hostId);
         if (this.connection) {
             this.connection.close();
         }
@@ -47,14 +50,17 @@ class Client {
     
         this.connection?.on('open', () => {
             console.log("Client connected to: " + this.connection?.peer);
-        });
-    
-        this.connection?.on('data', (data) => {
-            const message = data as HostMessage;
-            this.receive(message);
-        });
-        this.connection?.on('close', () => {
-            console.log("Client connection closed")
+
+            this.connection?.on('data', (data) => {
+                const message = data as HostMessage;
+                this.receive(message);
+            });
+
+            this.connection?.on('close', () => {
+                console.log("Connection to host closed")
+            });
+
+            this.send({type: "joinGame", data: {name: name}} as JoinGameMessage)
         });
 
         console.log("me connection", this.connection);
@@ -65,12 +71,18 @@ class Client {
             this.connection.send(data);
             console.log(data + " data sent");
         } else {
-            console.log('Connection is closed');
+            console.log('Unable to send, no open connection');
         }
     }
 
     receive(message: HostMessage) {
         console.log(message);
+        console.log(message.type);
+        switch(message.type) {
+            case "controllerReset":
+                this.controller = (message as ControllerResetMessage).data
+                console.log(this.controller.names);
+        }
     }
     
 }
