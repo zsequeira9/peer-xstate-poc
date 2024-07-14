@@ -1,13 +1,15 @@
 import { DataConnection, Peer } from 'peerjs'
 import { ClientMessage, ControllerResetMessage, HostMessage, JoinGameMessage } from './message';
-import { Controller } from './controller';
+import { PlayerController } from './controller';
 
 class Client {
-    peer: Peer | undefined;
+    peer!: Peer;
 
-    connection: DataConnection | undefined;
+    connection!: DataConnection;
 
-    controller: Controller | undefined;
+    controller?: PlayerController;
+
+    name: string = '';
 
     initialize() {
         this.peer = new Peer();
@@ -38,29 +40,31 @@ class Client {
     }
     
     join(hostId: string, name: string) {
+        this.name = name;
+        
         console.log("Client connection upon join", this.connection)
         console.log("Joining host with id: ", hostId);
         if (this.connection) {
             this.connection.close();
         }
     
-        this.connection = this.peer?.connect(hostId, {
+        this.connection = this.peer.connect(hostId, {
             reliable: true
         });
     
-        this.connection?.on('open', () => {
-            console.log("Client connected to: " + this.connection?.peer);
+        this.connection.on('open', () => {
+            console.log("Client connected to: " + this.connection.peer);
 
-            this.connection?.on('data', (data) => {
+            this.connection.on('data', (data) => {
                 const message = data as HostMessage;
                 this.receive(message);
             });
 
-            this.connection?.on('close', () => {
+            this.connection.on('close', () => {
                 console.log("Connection to host closed")
             });
 
-            this.send({type: "joinGame", data: {name: name}} as JoinGameMessage)
+            this.send({type: "joinGame", data: {name: this.name}} as JoinGameMessage)
         });
 
         console.log("me connection", this.connection);
@@ -69,18 +73,16 @@ class Client {
     send(data: ClientMessage) {
         if (this.connection && this.connection.open) {
             this.connection.send(data);
-            console.log(data + " data sent");
+            console.log(JSON.stringify(data, null, 4) + " data sent");
         } else {
             console.log('Unable to send, no open connection');
         }
     }
 
     receive(message: HostMessage) {
-        console.log(message);
-        console.log(message.type);
         switch(message.type) {
             case "controllerReset":
-                this.controller = (message as ControllerResetMessage).data
+                this.controller = new PlayerController((message as ControllerResetMessage).data.names, this.name)
                 console.log(this.controller.names);
         }
     }

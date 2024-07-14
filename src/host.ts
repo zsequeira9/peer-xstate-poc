@@ -1,13 +1,13 @@
 import { DataConnection, Peer } from 'peerjs'
 import { ClientMessage, ControllerResetMessage, HostMessage, JoinGameMessage } from './message';
-import { Controller } from './controller';
+import { BaseController } from './controller';
 
 class Host {
-    peer: Peer | undefined;
+    peer!: Peer;
 
     connections: DataConnection[] = [];
 
-    controller: Controller | undefined;
+    controller?: BaseController;
 
     initialize() {
         this.peer = new Peer();
@@ -45,16 +45,18 @@ class Host {
     }
 
     receive(message: ClientMessage) {
-        console.log(message);
-        console.log(message.type);
         switch(message.type) {
             case "joinGame":
-                const currentNames = this.controller ? this.controller.names : [];
-                this.controller = new Controller([(message as JoinGameMessage).data.name].concat(currentNames))
+                const newName = (message as JoinGameMessage).data.name;
+                const currentNames = this.controller ? [newName].concat(this.controller.names) : [newName];
+                this.controller = new BaseController(currentNames)
                 console.log(this.controller.names);
+
                 this.send({
                     type: "controllerReset",
-                    data: this.controller
+                    data: {
+                        names: currentNames
+                    }
                 } as ControllerResetMessage)
         }
     }

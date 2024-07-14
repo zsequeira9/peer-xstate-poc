@@ -57,6 +57,12 @@ export default function App() {
                 }}>
                     Join the lobby
                 </button>
+
+                <button onClick={() => {
+                    client.controller?.increment();
+                }}>
+                    Increment
+                </button>
             </div> : null
             }
 

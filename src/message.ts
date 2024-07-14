@@ -1,5 +1,4 @@
 import { AnyEventObject } from "xstate"
-import { Controller } from "./controller"
 
 export type clientMessageType = "controllerEvent" | "controllerSync" | "joinGame"
 
@@ -40,5 +39,7 @@ export interface ValidControllerMessage extends HostMessage {
 
 export interface ControllerResetMessage extends HostMessage {
     type: "controllerReset",
-    data: Controller
+    data: {
+        names: string[]
+    }
 }
