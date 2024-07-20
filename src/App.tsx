@@ -1,11 +1,16 @@
 import { host } from "./host";
 import { client } from "./client";
 import { useState } from 'react';
+import { useMachine } from '@xstate/react';
+import { PlayerControllerMachine } from "./playerControllerMachine";
 
 let hostId = '';
 let name = '';
 
 export default function App() {
+
+    const [state, send] = useMachine(PlayerControllerMachine, { input:  client.controller});
+
     const [isNetworkSetup, setIsNetworkSetup] = useState(true);
     const [isHost, setIsHost] = useState(false);
     const [isClient, setIsClient] = useState(false);
