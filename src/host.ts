@@ -39,18 +39,19 @@ class Host {
     }
 
     send(data: HostMessage) {
+        console.log("Host sending data", JSON.stringify(data, null, 4))
         this.connections.forEach((connection) => {
             connection.send(data);
         })
     }
 
     receive(message: ClientMessage) {
+        console.log("Host received message ", message.type);
         switch(message.type) {
             case "joinGame":
                 const newName = (message as JoinGameMessage).data.name;
                 const currentNames = this.controller ? [newName].concat(this.controller.names) : [newName];
                 this.controller = new BaseController(currentNames)
-                console.log(this.controller.names);
 
                 this.send({
                     type: "controllerReset",

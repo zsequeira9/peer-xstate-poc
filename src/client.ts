@@ -1,13 +1,12 @@
 import { DataConnection, Peer } from 'peerjs'
 import { ClientMessage, ControllerResetMessage, HostMessage, JoinGameMessage } from './message';
+import { PlayerControllerActor } from "./playerControllerMachine";
 import { PlayerController } from './controller';
 
 class Client {
     peer!: Peer;
 
     connection!: DataConnection;
-
-    controller?: PlayerController;
 
     name: string = '';
 
@@ -73,20 +72,22 @@ class Client {
     send(data: ClientMessage) {
         if (this.connection && this.connection.open) {
             this.connection.send(data);
-            console.log(JSON.stringify(data, null, 4) + " data sent");
+            console.log("Client sending data ", JSON.stringify(data, null, 4));
         } else {
             console.log('Unable to send, no open connection');
         }
     }
 
     receive(message: HostMessage) {
+        console.log("Client received message ", message.type);
         switch(message.type) {
             case "controllerReset":
-                this.controller = new PlayerController((message as ControllerResetMessage).data.names, this.name)
-                console.log(this.controller.names);
+                PlayerControllerActor.send(
+                    { type: "resetController", 
+                    controller:  new PlayerController(
+                        (message as ControllerResetMessage).data.names, this.name)})
         }
     }
-    
 }
 
 export const client = new Client();

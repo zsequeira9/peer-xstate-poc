@@ -1,23 +1,30 @@
-import { assign, setup } from 'xstate';
+import { assign, setup, createActor } from 'xstate';
 import { PlayerController } from './controller';
 
-export const PlayerControllerMachine = setup({
+interface resetControllerEvent {type: 'resetController', controller: PlayerController};
+
+const PlayerControllerMachine = setup({
     types: {
-        context: {} as PlayerController,
+        context: {} as {controller: PlayerController},
         input: {} as PlayerController,
-        events: {} as
+        events: {} as 
+            | resetControllerEvent
             | { type: 'increment' }
     },
     actions: {
         increment: assign(({context}) => {
-            context.increment();
+            context.controller.increment();
             return context;
         }),
+        // resetController: assign((_, event: resetControllerEvent) => {
+        //     console.log(event);
+        //     return {controller: event.controller};
+        // })
     }
   }).createMachine({
     id: 'PlayerController',
     context: ({input}) => (
-        input
+        {controller: input}
     ),
     initial: 'default',
     states: {
@@ -29,8 +36,17 @@ export const PlayerControllerMachine = setup({
                             type: 'increment'
                         }
                     ]
+                },
+                'resetController': {
+                    actions: assign(({event}) => {
+                        return {controller: event.controller};
+                    })
                 }
             }
         }
     }
   });
+
+export const PlayerControllerActor = createActor(PlayerControllerMachine, {
+    input: new PlayerController([], '')
+  }).start();
