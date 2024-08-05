@@ -40,7 +40,7 @@ export class PlayerController extends BaseController {
     increment() {
         if (this.isMyTurn) {
             this.count[this.name] += 1;
-            console.log("New Count", this.count[this.name]);
+            console.log("New Count", JSON.stringify(this.count, null, 4));
         }
         else {
             console.log("Not my turn!");

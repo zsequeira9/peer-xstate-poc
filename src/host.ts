@@ -1,25 +1,28 @@
 import { DataConnection, Peer } from 'peerjs'
-import { ClientMessage, ControllerResetMessage, HostMessage, JoinGameMessage } from './message';
-import { BaseController } from './controller';
+import { Message, ControllerResetMessage } from './message';
 
 class Host {
     peer!: Peer;
 
     connections: DataConnection[] = [];
 
-    controller?: BaseController;
+    names: string[] = [];
 
     initialize() {
         this.peer = new Peer();
-    
-        this.peer.on('open', (id) => {
-            console.log('My peer ID is: ' + id);
-        });
+
+        const hostInitializedPromise = new Promise<string>((resolve) => {
+            this.peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                resolve(id);
+            });
+        })
     
         this.peer.on('connection', (connection: DataConnection) => {
             console.log("Connected to: " + connection.peer);
+
             connection.on('data', (data) => {
-                const message = data as ClientMessage;
+                const message = data as Message;
                 this.receive(message);
             })
             this.connections.push(connection);
@@ -36,29 +39,31 @@ class Host {
         this.peer.on('error', (err) => {
             console.log(err);
         });
+
+        return hostInitializedPromise;
     }
 
-    send(data: HostMessage) {
+    send(data: Message) {
         console.log("Host sending data", JSON.stringify(data, null, 4))
         this.connections.forEach((connection) => {
             connection.send(data);
         })
     }
 
-    receive(message: ClientMessage) {
+    receive(message: Message) {
         console.log("Host received message ", message.type);
         switch(message.type) {
             case "joinGame":
-                const newName = (message as JoinGameMessage).data.name;
-                const currentNames = this.controller ? [newName].concat(this.controller.names) : [newName];
-                this.controller = new BaseController(currentNames)
-
+                const newName = message.data.name;
+                this.names.push(newName);
+                this.send(new ControllerResetMessage(this.names))
+                break;
+            default: 
                 this.send({
-                    type: "controllerReset",
-                    data: {
-                        names: currentNames
-                    }
-                } as ControllerResetMessage)
+                    id: message.id,
+                    type: message.type,
+                    data: message.data
+                })    
         }
     }
 }

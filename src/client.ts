@@ -1,5 +1,5 @@
 import { DataConnection, Peer } from 'peerjs'
-import { ClientMessage, ControllerResetMessage, HostMessage, JoinGameMessage } from './message';
+import { Message, JoinGameMessage } from './message';
 import { PlayerControllerActor } from "./playerControllerMachine";
 import { PlayerController } from './controller';
 
@@ -10,11 +10,16 @@ class Client {
 
     name: string = '';
 
+    previousActionId: string = '';
+
     initialize() {
         this.peer = new Peer();
-    
-        this.peer.on('open', (id) => {
-            console.log('My peer ID is: ' + id);
+
+        const clientInitializedPromise = new Promise<string>((resolve) => {
+            this.peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                resolve(id);
+            });
         });
     
         this.peer.on('connection', (connection) => {
@@ -36,6 +41,8 @@ class Client {
         this.peer.on('error', (err) => {
             console.log(err);
         });
+
+        return clientInitializedPromise;
     }
     
     join(hostId: string, name: string) {
@@ -55,7 +62,7 @@ class Client {
             console.log("Client connected to: " + this.connection.peer);
 
             this.connection.on('data', (data) => {
-                const message = data as HostMessage;
+                const message = data as Message;
                 this.receive(message);
             });
 
@@ -63,13 +70,14 @@ class Client {
                 console.log("Connection to host closed")
             });
 
-            this.send({type: "joinGame", data: {name: this.name}} as JoinGameMessage)
+            this.send(new JoinGameMessage(this.name))
         });
 
         console.log("me connection", this.connection);
     }
     
-    send(data: ClientMessage) {
+    send(data: Message) {
+        this.previousActionId = data.id;
         if (this.connection && this.connection.open) {
             this.connection.send(data);
             console.log("Client sending data ", JSON.stringify(data, null, 4));
@@ -78,14 +86,23 @@ class Client {
         }
     }
 
-    receive(message: HostMessage) {
+    receive(message: Message) {
         console.log("Client received message ", message.type);
+        if (message.id === this.previousActionId) {
+            console.log("Received own message, ignoring.")
+            return;
+        }
         switch(message.type) {
             case "controllerReset":
+                console.log("Resetting controller", message.data.names);
                 PlayerControllerActor.send(
                     { type: "resetController", 
-                    controller:  new PlayerController(
-                        (message as ControllerResetMessage).data.names, this.name)})
+                    controller:  new PlayerController(message.data.names, this.name)})
+                break;
+            case "incrementEventAction":
+                PlayerControllerActor.send(
+                    {type: "increment"}
+                )
         }
     }
 }

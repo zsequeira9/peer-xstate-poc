@@ -2,6 +2,7 @@ import { host } from "./host";
 import { client } from "./client";
 import { useState } from 'react';
 import { PlayerControllerActor } from "./playerControllerMachine";
+import { IncrementEventAction } from "./message";
 
 let hostId = '';
 let name = '';
@@ -9,42 +10,36 @@ let name = '';
 export default function App() {
     const [isNetworkSetup, setIsNetworkSetup] = useState(true);
     const [isHost, setIsHost] = useState(false);
-    const [isClient, setIsClient] = useState(false);
+
+    const hostButton = <button onClick={() => {
+        // loading_spinner = true
+        let hostInitialized = host.initialize()
+        let clientInitialized = client.initialize()
+        Promise.all([hostInitialized, clientInitialized])
+            .then(([_hostId, _]) => {
+                hostId = _hostId;
+                client.join(hostId, name);
+                setIsHost(true);
+                setIsNetworkSetup(false);
+                // loading_spinning = false
+            })
+    }}>
+        Start a lobby
+    </button>
+
+    const clientButton = <button onClick={() => {
+        client.initialize();
+        setIsHost(false);
+        setIsNetworkSetup(false);
+    }}>
+        Join a lobby
+    </button>
 
     return (
         <main>
             {
             isNetworkSetup ? 
             <div>
-                <button onClick={() => {
-                    host.initialize();
-                    setIsHost(true);
-                    setIsNetworkSetup(false);
-                }}>
-                    Start a lobby
-                </button>
-
-                <button onClick={() => {
-                    client.initialize();
-                    setIsClient(true);
-                    setIsNetworkSetup(false);
-                }}>
-                    Join a lobby
-                </button>
-                </div> : null
-            }
-
-            {
-            isClient ? 
-            <div>
-                <label>
-                    Lobby Id: <input name="hostId"
-                        onChange={e => {
-                            hostId = e.target.value;
-                        }}
-                    type="text" />
-                </label>
-
                 <label>
                     Name: <input name="name"
                         onChange={e => {
@@ -52,25 +47,43 @@ export default function App() {
                         }}
                         type="text" />
                 </label>
+                {hostButton}
+                {clientButton}
+                </div>
+                 : null
+            }
+
+            <div>
+                {!isNetworkSetup && !isHost ?
+                     <div>
+                        <label>
+                            Lobby Id: <input name="hostId"
+                                onChange={e => {
+                                    hostId = e.target.value;
+                                }}
+                            type="text" />
+                        </label>
+                        <button onClick={() => {
+                            console.log("Host id", hostId)
+                            client.join(hostId, name);
+                        }}>
+                            Join the lobby
+                        </button> 
+                    </div> 
+                    : null}
+
+                {!isNetworkSetup && isHost ?
+                    <div> host Id: {hostId} </div> 
+                    : null
+                }
 
                 <button onClick={() => {
-                    client.join(hostId, name);
+                    PlayerControllerActor.send({ type: "increment"})
+                    client.send(new IncrementEventAction())
                 }}>
-                    Join the lobby
-                </button>
-
-                <button onClick={() => {PlayerControllerActor.send({ type: "increment" })}}>
                     Increment
                 </button>
-            </div> : null
-            }
-
-            {
-            isHost ?
-            (<div>
-                You are da host
-            </div>) : null
-            }
+            </div>
 
         </main>
     )
