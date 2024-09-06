@@ -1,23 +1,29 @@
 import { DataConnection, Peer } from 'peerjs'
 import { Message, JoinGameMessage } from './message';
-import { PlayerControllerActor } from "./playerControllerMachine";
-import { PlayerController } from './controller';
+import { createGameMachine, getGameMachine } from './playerControllerMachineXstate';
+import { StateMachine } from 'xstate';
 
-class Client {
+export class Client {
     peer!: Peer;
 
     connection!: DataConnection;
 
     name: string = '';
 
+    names: string[] = [];
+
+    // machine: StateMachine = __gameMachine;
+
     previousActionId: string = '';
+
+    // setParentMachine: any
 
     initialize() {
         this.peer = new Peer();
 
         const clientInitializedPromise = new Promise<string>((resolve) => {
             this.peer.on('open', (id) => {
-                console.log('My peer ID is: ' + id);
+                // console.log('My peer ID is: ' + id);
                 resolve(id);
             });
         });
@@ -48,8 +54,8 @@ class Client {
     join(hostId: string, name: string) {
         this.name = name;
         
-        console.log("Client connection upon join", this.connection)
-        console.log("Joining host with id: ", hostId);
+        // console.log("Client connection upon join", this.connection)
+        // console.log("Joining host with id: ", hostId);
         if (this.connection) {
             this.connection.close();
         }
@@ -59,7 +65,7 @@ class Client {
         });
     
         this.connection.on('open', () => {
-            console.log("Client connected to: " + this.connection.peer);
+            // console.log("Client connected to: " + this.connection.peer);
 
             this.connection.on('data', (data) => {
                 const message = data as Message;
@@ -73,7 +79,7 @@ class Client {
             this.send(new JoinGameMessage(this.name))
         });
 
-        console.log("me connection", this.connection);
+        // console.log("me connection", this.connection);
     }
     
     send(data: Message) {
@@ -87,7 +93,7 @@ class Client {
     }
 
     receive(message: Message) {
-        console.log("Client received message ", message.type);
+        // console.log("Client received message ", message.type);
         if (message.id === this.previousActionId) {
             console.log("Received own message, ignoring.")
             return;
@@ -95,12 +101,18 @@ class Client {
         switch(message.type) {
             case "controllerReset":
                 console.log("Resetting controller", message.data.names);
-                PlayerControllerActor.send(
-                    { type: "resetController", 
-                    controller:  new PlayerController(message.data.names, this.name)})
+
+                this.names = message.data.names;
+
+                createGameMachine(this.names);
+
+                console.log(getGameMachine());
+                // PlayerControllerActor.send(
+                //     { type: "resetController", 
+                //     controller:  new PlayerController(message.data.names, this.name)})
                 break;
             case "incrementEventAction":
-                PlayerControllerActor.send(
+                getGameMachine().send(
                     {type: "increment"}
                 )
         }

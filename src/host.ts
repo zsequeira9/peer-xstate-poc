@@ -13,13 +13,13 @@ class Host {
 
         const hostInitializedPromise = new Promise<string>((resolve) => {
             this.peer.on('open', (id) => {
-                console.log('My peer ID is: ' + id);
+                // console.log('My peer ID is: ' + id);
                 resolve(id);
             });
         })
     
         this.peer.on('connection', (connection: DataConnection) => {
-            console.log("Connected to: " + connection.peer);
+            // console.log("Connected to: " + connection.peer);
 
             connection.on('data', (data) => {
                 const message = data as Message;
@@ -44,14 +44,14 @@ class Host {
     }
 
     send(data: Message) {
-        console.log("Host sending data", JSON.stringify(data, null, 4))
+        // console.log("Host sending data", JSON.stringify(data, null, 4))
         this.connections.forEach((connection) => {
             connection.send(data);
         })
     }
 
     receive(message: Message) {
-        console.log("Host received message ", message.type);
+        // console.log("Host received message ", message.type);
         switch(message.type) {
             case "joinGame":
                 const newName = message.data.name;

@@ -1,4 +1,7 @@
-import { assign, setup, createMachine, enqueueActions, sendTo, log } from 'xstate';
+import { assign, setup, createMachine, enqueueActions, sendTo, log, StateMachine, spawnChild } from 'xstate';
+import { useSyncExternalStore } from 'react';
+
+var __gameMachine: StateMachine;
 
 interface scoreCard {
     score: number
@@ -48,24 +51,49 @@ export const ChildControllerMachine = setup({
   });
 
 
-export const ParentMachine = createMachine({
-    entry: [
-        assign({
-                childMachineRefs: ({ spawn }) => [
-                  spawn(ChildControllerMachine, { id: 'player1', input: {score: 0} as scoreCard }),
-                  spawn(ChildControllerMachine, { id: 'player2', input: {score: 0} as scoreCard}),
-                ],
-              })
-    ],
-    on: {
-        'player1.done': {
-            actions: sendTo('player2', {type: 'startTurn'}),
-        },
-        'player2.done': {
-                actions: sendTo('player1', { type: 'startTurn' }),
-        },
-        'start': {
-            actions: sendTo('player1', { type: 'startTurn' }),
-        }
+export function getGameMachine() {
+    if (__gameMachine === undefined) {
+        return createGameMachine([]);
     }
-  });
+    else {
+        return __gameMachine;
+    }
+}
+
+
+export function createGameMachine(names: string[]){
+
+    const childMachineRefs = ({spawn}) => names.map((name) => spawn(ChildControllerMachine, {id: name, input: {score: 0} as scoreCard }))
+
+    const on = {} as Record<string, {}>
+
+    for (let i = 0; i< names.length; i++) {
+        let nextPlayer;
+        if (i === names.length-1) {
+            nextPlayer = names[0];
+        }
+        else {
+            nextPlayer = names[i+1];
+        }
+        on[`${names[i]}.done`] = {actions: sendTo(nextPlayer, {type: 'startTurn'})}
+    }
+
+    on['start'] = {actions: sendTo(names[0], {type: 'startTurn'})}
+
+    __gameMachine =  createMachine({
+            entry: [assign({childMachineRefs})], 
+            on: on
+        });
+
+     console.log("__gameMachine", __gameMachine.children);
+
+
+    window.machine = __gameMachine;
+
+    const event = new CustomEvent("newMachine", {detail: __gameMachine})
+
+    window.dispatchEvent(event);
+
+    return __gameMachine;
+
+}
