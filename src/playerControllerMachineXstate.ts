@@ -1,5 +1,4 @@
-import { assign, setup, createMachine, enqueueActions, sendTo, log, StateMachine, spawnChild } from 'xstate';
-import { useSyncExternalStore } from 'react';
+import { assign, setup, createMachine, enqueueActions, sendTo, log, StateMachine } from 'xstate';
 
 var __gameMachine: StateMachine;
 
@@ -43,6 +42,7 @@ export const ChildControllerMachine = setup({
         waiting: {
             on: {
                 'startTurn': {
+                    actions: log("myturn"),
                     target: 'myTurn'
                 }
             }
@@ -79,20 +79,13 @@ export function createGameMachine(names: string[]){
     }
 
     on['start'] = {actions: sendTo(names[0], {type: 'startTurn'})}
+    // on['start'] = {actions: log('start event')};
 
     __gameMachine =  createMachine({
             entry: [assign({childMachineRefs})], 
             on: on
         });
 
-     console.log("__gameMachine", __gameMachine.children);
-
-
-    window.machine = __gameMachine;
-
-    const event = new CustomEvent("newMachine", {detail: __gameMachine})
-
-    window.dispatchEvent(event);
 
     return __gameMachine;
 

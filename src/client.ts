@@ -18,6 +18,12 @@ export class Client {
 
     // setParentMachine: any
 
+    setNamesFunction: any
+
+    constructor(setNamesFunction: any) {
+        this.setNamesFunction = setNamesFunction;
+    }
+
     initialize() {
         this.peer = new Peer();
 
@@ -102,21 +108,23 @@ export class Client {
             case "controllerReset":
                 console.log("Resetting controller", message.data.names);
 
-                this.names = message.data.names;
+                this.setNamesFunction(message.data.names);
 
-                createGameMachine(this.names);
+                // this.names = message.data.names;
 
-                console.log(getGameMachine());
+                // createGameMachine(this.names);
+
+                // console.log(getGameMachine());
                 // PlayerControllerActor.send(
                 //     { type: "resetController", 
                 //     controller:  new PlayerController(message.data.names, this.name)})
                 break;
             case "incrementEventAction":
-                getGameMachine().send(
-                    {type: "increment"}
-                )
+                // getGameMachine().send(
+                //     {type: "increment"}
+                // )
         }
     }
 }
 
-export const client = new Client();
+// export const client = new Client();

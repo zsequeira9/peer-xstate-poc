@@ -1,9 +1,8 @@
 import Gameboard from './Gameboard';
 import { host } from "./host";
-import { client } from "./client";
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { useActor, useActorRef } from '@xstate/react';
-import { StateMachine, AnyActorLogic } from 'xstate';
+import { Client } from "./client";
+import { useEffect, useState } from 'react';
+import { StateMachine } from 'xstate';
 import { createGameMachine, getGameMachine } from './playerControllerMachineXstate';
 
 let hostId = '';
@@ -11,40 +10,18 @@ let name = '';
 
 export default function App() {
 
-    // function useOnlineStatus() {
-    //     // ✅ Good: Subscribing to an external store with a built-in Hook
-    //     return useSyncExternalStore(
-    //       subscribe, // React won't resubscribe for as long as you pass the same function
-    //       () => getGameMachine, // How to get the value on the client
-    //     );
-    //   }
-
-    // const [state, send, actorRef] = useActor(__gameMachine);
-
-    // const [machineState, setMachineState] = useState(state);
-    // const [machineSend, setMachineSend] = useState(send);
-    // const [machineActorRef, setMachineActorRef] = useState(actorRef);
-
     const [ParentMachine, setParentMachine] = useState<StateMachine>(getGameMachine());
-    const [snapshot, send, actorRef] = useActor(ParentMachine);
 
-    // const [names, setNames] = useState<string[]>([]);
-    // client.setParentMachine = setParentMachine;
+    const [names, setNames] = useState<string[]>([]);
+
+    const client = new Client(setNames);
+
 
     useEffect(() => {
-        function doit(e: CustomEvent) {
-            // const [state, send, actorRef] = useActor(e.detail);
-            // setMachineState(state);
-            // setMachineSend(send);
-            // setMachineActorRef(actorRef);
-            console.log("App parent machine", getGameMachine().children);
-            setParentMachine(getGameMachine());
-        }
-        window.addEventListener('newMachine', doit);
-        return () => {
-            window.removeEventListener('newMachine', doit);
-        };
-    }, []);
+        const gameMachineLogic = createGameMachine(names);
+        console.log("hello from names useeffect: ", gameMachineLogic)
+        setParentMachine(gameMachineLogic);
+    }, [names])
 
     const [isNetworkSetup, setIsNetworkSetup] = useState(true);
     const [isHost, setIsHost] = useState(false);
@@ -113,10 +90,7 @@ export default function App() {
                 <div> host Id: {hostId} </div>
                 : null
             }
-            <Gameboard snapshot={snapshot} send={send}></Gameboard>
-            {/* <Gameboard state={machineState}
-            send={machineSend}
-            actorRef={machineActorRef}></Gameboard> */}
+            <Gameboard key={names.length} ParentMachineLogic={ParentMachine}></Gameboard>
 
         </main>
     )

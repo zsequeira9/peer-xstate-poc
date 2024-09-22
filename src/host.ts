@@ -1,7 +1,7 @@
 import { DataConnection, Peer } from 'peerjs'
 import { Message, ControllerResetMessage } from './message';
 
-class Host {
+export class Host {
     peer!: Peer;
 
     connections: DataConnection[] = [];

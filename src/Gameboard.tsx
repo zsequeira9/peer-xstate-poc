@@ -1,36 +1,48 @@
-import { useEffect, useState } from "react";
-import { SnapshotFrom, AnyActorRef, AnyActorLogic, AnyMachineSnapshot } from "xstate";
-import { useActor } from '@xstate/react';
+import { useEffect, useState, useSyncExternalStore, useCallback } from "react";
+import { SnapshotFrom, AnyActorRef, createActor } from "xstate";
 
 import { ChildControllerMachine } from "./playerControllerMachineXstate";
 
 type childSnapshot = SnapshotFrom<typeof ChildControllerMachine>
 
 interface GameboardProps {
-    snapshot: AnyMachineSnapshot
-    send: () => any
+    ParentMachineLogic: any
 }
 
-interface Props {
-    state: any
-    send: any
-    actorRef: any
-}
+export default function Gameboard({ParentMachineLogic: ParentMachine}: GameboardProps){
 
-export default function Gameboard({snapshot, send}: GameboardProps){
-//  export default function Gameboard({state, send, actorRef}: Props){
+    const [[actorRef, system], setActorRef] = useState(() => {
+        let actor = createActor(ParentMachine, {
+            systemId: 'root-id',
+            inspect: (inspectionEvent) => {
+                console.log(inspectionEvent);
+            }
+        }); 
+        let system = actor.start();
+        return [actor, system];
+    });
 
-    // console.log("Parent Machine", ParentMachine);
-
-    // console.log("gameboard machine children", ParentMachine.children);
-
-    // const [state, send, actorRef] = useActor(ParentMachine);
-    console.log("inside gameboard children", snapshot.context);
-    console.log("inside gameboard parentMachine", snapshot.events);
-    console.log("aaa", snapshot.events);
-    
     const [players, setPlayers] = useState<Record<string, childSnapshot>>({})
 
+    useEffect(() => {
+        let actor = createActor(ParentMachine);
+        let system = actor.start();
+        setActorRef([actor, system]);
+    }, [ParentMachine]);
+
+    const getSnapshot = useCallback(() => {
+        const newSnapshot = actorRef.getSnapshot();
+
+        return newSnapshot
+    }, [actorRef]);
+
+    const subscribe = useCallback((handleStoreChange: () => void) => {
+        const { unsubscribe } = actorRef.subscribe(handleStoreChange);
+        return unsubscribe;
+    }, [actorRef]);
+
+    const snapshot = useSyncExternalStore(subscribe, getSnapshot);
+    
     // useEffect(() => {
     //     const subscription = actorRef.subscribe((snapshot) => {
     //         console.log("Use effect snapshot", snapshot);
@@ -42,7 +54,7 @@ export default function Gameboard({snapshot, send}: GameboardProps){
     //     });
       
     //     return subscription.unsubscribe;
-    //   }, [actorRef]);
+    //   }, [snapshot]);
     
     // Player Scores
     const playerScores = Object.entries(players).map(([playerid, player]) => {
@@ -57,7 +69,7 @@ export default function Gameboard({snapshot, send}: GameboardProps){
     const PlayerButtons = snapshot.context.childMachineRefs.map((child: AnyActorRef) => 
         <li key={child.id}>
             <button 
-                disabled={ child.getSnapshot().value === 'waiting' }
+                // disabled={ child.getSnapshot().value === 'waiting' }
                 onClick={() => { child.send({type: 'playButton' })}}>
                 {child.id}
             </button>
@@ -65,7 +77,7 @@ export default function Gameboard({snapshot, send}: GameboardProps){
 
     return (
         <main> 
-            <button onClick={() => { send({ type: 'start' }) }}>
+            <button onClick={() => { system.send({ type: 'start' })  }}>
                 start
             </button>
 
