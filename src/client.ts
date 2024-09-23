@@ -1,7 +1,5 @@
 import { DataConnection, Peer } from 'peerjs'
 import { Message, JoinGameMessage } from './message';
-import { createGameMachine, getGameMachine } from './playerControllerMachineXstate';
-import { StateMachine } from 'xstate';
 
 export class Client {
     peer!: Peer;
@@ -12,11 +10,7 @@ export class Client {
 
     names: string[] = [];
 
-    // machine: StateMachine = __gameMachine;
-
     previousActionId: string = '';
-
-    // setParentMachine: any
 
     setNamesFunction: any
 
@@ -29,7 +23,7 @@ export class Client {
 
         const clientInitializedPromise = new Promise<string>((resolve) => {
             this.peer.on('open', (id) => {
-                // console.log('My peer ID is: ' + id);
+                console.log('My peer ID is: ' + id);
                 resolve(id);
             });
         });
@@ -61,7 +55,7 @@ export class Client {
         this.name = name;
         
         // console.log("Client connection upon join", this.connection)
-        // console.log("Joining host with id: ", hostId);
+        console.log("Joining host with id: ", hostId);
         if (this.connection) {
             this.connection.close();
         }
@@ -71,7 +65,7 @@ export class Client {
         });
     
         this.connection.on('open', () => {
-            // console.log("Client connected to: " + this.connection.peer);
+            console.log("Client connected to: " + this.connection.peer);
 
             this.connection.on('data', (data) => {
                 const message = data as Message;
@@ -85,7 +79,6 @@ export class Client {
             this.send(new JoinGameMessage(this.name))
         });
 
-        // console.log("me connection", this.connection);
     }
     
     send(data: Message) {
@@ -106,18 +99,11 @@ export class Client {
         }
         switch(message.type) {
             case "controllerReset":
-                console.log("Resetting controller", message.data.names);
-
+                // console.log("Resetting controller", message.data.names);
+                // set names in main App 
                 this.setNamesFunction(message.data.names);
 
-                // this.names = message.data.names;
-
-                // createGameMachine(this.names);
-
-                // console.log(getGameMachine());
-                // PlayerControllerActor.send(
-                //     { type: "resetController", 
-                //     controller:  new PlayerController(message.data.names, this.name)})
+                this.names = message.data.names;
                 break;
             case "incrementEventAction":
                 // getGameMachine().send(
@@ -126,5 +112,3 @@ export class Client {
         }
     }
 }
-
-// export const client = new Client();

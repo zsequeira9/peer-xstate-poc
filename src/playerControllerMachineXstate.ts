@@ -1,10 +1,12 @@
-import { assign, setup, createMachine, enqueueActions, sendTo, log, StateMachine } from 'xstate';
+import { assign, setup, createMachine, enqueueActions, sendTo, log, AnyActorLogic } from 'xstate';
 
-var __gameMachine: StateMachine;
+var __gameMachine: AnyActorLogic;
 
 interface scoreCard {
     score: number
 }
+
+type spawnFunction = (actorBehavior: AnyActorLogic, {}) => {}
 
 export const ChildControllerMachine = setup({
     types: {
@@ -63,7 +65,9 @@ export function getGameMachine() {
 
 export function createGameMachine(names: string[]){
 
-    const childMachineRefs = ({spawn}) => names.map((name) => spawn(ChildControllerMachine, {id: name, input: {score: 0} as scoreCard }))
+    const childMachineRefs = ({spawn}: {spawn: spawnFunction}) => 
+        names.map((name) => 
+            spawn(ChildControllerMachine, {id: name, input: {score: 0} as scoreCard }))
 
     const on = {} as Record<string, {}>
 

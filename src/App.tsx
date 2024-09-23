@@ -2,7 +2,7 @@ import Gameboard from './Gameboard';
 import { host } from "./host";
 import { Client } from "./client";
 import { useEffect, useState } from 'react';
-import { StateMachine } from 'xstate';
+import { AnyActorLogic, StateMachine } from 'xstate';
 import { createGameMachine, getGameMachine } from './playerControllerMachineXstate';
 
 let hostId = '';
@@ -10,20 +10,20 @@ let name = '';
 
 export default function App() {
 
-    const [ParentMachine, setParentMachine] = useState<StateMachine>(getGameMachine());
+    const [ParentMachine, setParentMachine] = useState<AnyActorLogic>(getGameMachine());
 
     const [names, setNames] = useState<string[]>([]);
 
     const client = new Client(setNames);
 
-
     useEffect(() => {
         const gameMachineLogic = createGameMachine(names);
-        console.log("hello from names useeffect: ", gameMachineLogic)
+        console.log("Names in App updated, recreating GameMachineLogic");
         setParentMachine(gameMachineLogic);
     }, [names])
 
     const [isNetworkSetup, setIsNetworkSetup] = useState(true);
+
     const [isHost, setIsHost] = useState(false);
 
     const hostButton = <button onClick={() => {
@@ -43,7 +43,6 @@ export default function App() {
     </button>
 
     const clientButton = <button onClick={() => {
-        client.initialize();
         setIsHost(false);
         setIsNetworkSetup(false);
     }}>
@@ -78,8 +77,10 @@ export default function App() {
                             type="text" />
                     </label>
                     <button onClick={() => {
-                        // console.log("Host id", hostId)
-                        client.join(hostId, name);
+                        let clientInitialized = client.initialize();
+
+                        Promise.resolve(clientInitialized)
+                            .then(() => {client.join(hostId, name)});
                     }}>
                         Join the lobby
                     </button>
