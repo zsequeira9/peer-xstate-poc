@@ -2,7 +2,7 @@ import Gameboard from './Gameboard';
 import { host } from "./host";
 import { Client } from "./client";
 import { useEffect, useState } from 'react';
-import { AnyActorLogic, StateMachine } from 'xstate';
+import { AnyActorLogic } from 'xstate';
 import { createGameMachine, getGameMachine } from './playerControllerMachineXstate';
 
 let hostId = '';
@@ -10,16 +10,17 @@ let name = '';
 
 export default function App() {
 
-    const [ParentMachine, setParentMachine] = useState<AnyActorLogic>(getGameMachine());
+    const [machineLogic, setMachineLogic] = useState<AnyActorLogic>(getGameMachine());
 
     const [names, setNames] = useState<string[]>([]);
 
     const client = new Client(setNames);
 
+    // When client updates list of names, recreate the machine logic
     useEffect(() => {
-        const gameMachineLogic = createGameMachine(names);
-        console.log("Names in App updated, recreating GameMachineLogic");
-        setParentMachine(gameMachineLogic);
+        const logic = createGameMachine(names);
+        console.log("Names in App updated, recreating machine logic");
+        setMachineLogic(logic);
     }, [names])
 
     const [isNetworkSetup, setIsNetworkSetup] = useState(true);
@@ -78,7 +79,6 @@ export default function App() {
                     </label>
                     <button onClick={() => {
                         let clientInitialized = client.initialize();
-
                         Promise.resolve(clientInitialized)
                             .then(() => {client.join(hostId, name)});
                     }}>
@@ -91,7 +91,7 @@ export default function App() {
                 <div> host Id: {hostId} </div>
                 : null
             }
-            <Gameboard key={names.length} ParentMachineLogic={ParentMachine}></Gameboard>
+            <Gameboard key={names.length} MachineLogic={machineLogic}></Gameboard>
 
         </main>
     )

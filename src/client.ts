@@ -12,7 +12,7 @@ export class Client {
 
     previousActionId: string = '';
 
-    setNamesFunction: any
+    setNamesFunction: React.Dispatch<React.SetStateAction<string[]>>
 
     constructor(setNamesFunction: any) {
         this.setNamesFunction = setNamesFunction;
