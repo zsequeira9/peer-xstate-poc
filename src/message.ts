@@ -1,14 +1,22 @@
 // import { AnyEventObject } from "xstate"
 import { v4 as uuidv4 } from "uuid"
+import { AnyEventObject } from "xstate";
 
 export type MessageType = "controllerEvent" | "controllerSync" | "joinGame" 
-    |  "validControllerEvent" | "controllerReset" | "faceDownSync" | "incrementEventAction"
+    |  "validControllerEvent" | "controllerReset" | "faceDownSync" | "incrementEventAction" | "xstate"
 
 export interface Message {
     id: string;
     type: MessageType
     data: any
 }
+
+export class XstateEventAction implements Message {
+    id: string = uuidv4();
+    type: MessageType = "xstate";
+    data: AnyEventObject;
+}
+
 
 export class IncrementEventAction implements Message {
     id: string = uuidv4();

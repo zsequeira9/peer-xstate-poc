@@ -1,20 +1,19 @@
 import Gameboard from './Gameboard';
 import { host } from "./host";
-import { Client } from "./client";
+import { client } from "./client";
 import { useEffect, useState } from 'react';
 import { AnyActorLogic } from 'xstate';
 import { createGameMachine, getGameMachine } from './playerControllerMachineXstate';
 
 let hostId = '';
-let name = '';
+let name = Math.random().toString();
 
 export default function App() {
 
     const [machineLogic, setMachineLogic] = useState<AnyActorLogic>(getGameMachine());
 
-    const [names, setNames] = useState<string[]>([]);
-
-    const client = new Client(setNames);
+    const [names, setNames] = useState<string[]>([name]);
+    client.setNamesFunction = setNames;
 
     // When client updates list of names, recreate the machine logic
     useEffect(() => {
@@ -57,6 +56,7 @@ export default function App() {
                     <div>
                         <label>
                             Name: <input name="name"
+                                         value={names[0]}
                                 onChange={e => {
                                     name = e.target.value;
                                 }}
@@ -75,7 +75,7 @@ export default function App() {
                             onChange={e => {
                                 hostId = e.target.value;
                             }}
-                            type="text" />
+                            type="text"/>
                     </label>
                     <button onClick={() => {
                         let clientInitialized = client.initialize();
@@ -88,7 +88,11 @@ export default function App() {
                 : null}
 
             {!isNetworkSetup && isHost ?
-                <div> host Id: {hostId} </div>
+                <div> host Id: {hostId}
+                <button type="button" onClick={e => {
+                    navigator.clipboard.writeText(hostId)
+                }}>Copy</button>
+                </div>
                 : null
             }
             <Gameboard key={names.length} MachineLogic={machineLogic}></Gameboard>

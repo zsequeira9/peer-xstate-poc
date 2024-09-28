@@ -1,7 +1,9 @@
 import { useEffect, useState, useSyncExternalStore, useCallback } from "react";
-import { SnapshotFrom, AnyActorRef, createActor } from "xstate";
+import { SnapshotFrom, AnyActorRef, createActor, ActorOptions, InspectionEvent } from "xstate";
 
 import { ChildControllerMachine } from "./playerControllerMachineXstate";
+import { client } from "./client";
+import { XstateEventAction } from "./message";
 
 type childSnapshot = SnapshotFrom<typeof ChildControllerMachine>
 
@@ -9,23 +11,51 @@ interface GameboardProps {
     MachineLogic: any
 }
 
+const inspectionProcessor = (inspectionEvent: InspectionEvent) => {
+    if (inspectionEvent.type === '@xstate.event') {
+        console.group("XSTATE updated - inspection event")
+        if (inspectionEvent.actorRef.getSnapshot().systemId == 'root_id' ) {
+            console.log("ROOT")
+        } else {
+            console.log("Not Root")
+        }
+        if (inspectionEvent.event.type.includes('xstate')) {
+            console.log("ignoring Internal xstate event", inspectionEvent.event)
+        } else if (inspectionEvent.event.value) {
+            console.log("This is a replayed event, don't bubble it");
+        } else {
+            console.log("Event triggered by a human (client didn't add the ID when receiving)");
+            const message = new XstateEventAction()
+            message.data = inspectionEvent.event
+            client.send(message)
+        }
+        console.groupEnd()
+    }
+}
+const actorOptions: ActorOptions<any> = {
+    systemId: 'root-id',
+    inspect: inspectionProcessor
+}
+
 export default function Gameboard({MachineLogic: MachineLogic}: GameboardProps){
 
     // Set up intial actor and actor system.
     const [[actorRef, system], setActorRef] = useState(() => {
-        let actor = createActor(MachineLogic, {
-            systemId: 'root-id',
-            inspect: (inspectionEvent) => {
-                console.log(inspectionEvent);
-            }
-        }); 
+        // noinspection TypeScriptValidateTypes
+        let actor = createActor(MachineLogic,actorOptions);
         let system = actor.start();
         return [actor, system];
     });
 
+    // Update the machine referenced by the replication client when it changes
+    useEffect(() => {
+        client.xstate = actorRef;
+    }, [actorRef])
+
     // When Machine Logic updates, recreate the actor and system.
     useEffect(() => {
-        let actor = createActor(MachineLogic);
+        // noinspection TypeScriptValidateTypes
+        let actor = createActor(MachineLogic, actorOptions);
         let system = actor.start();
         setActorRef([actor, system]);
     }, [MachineLogic]);

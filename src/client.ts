@@ -1,7 +1,8 @@
 import { DataConnection, Peer } from 'peerjs'
 import { Message, JoinGameMessage } from './message';
+import { AnyActorRef, AnyEventObject} from "xstate";
 
-export class Client {
+class Client {
     peer!: Peer;
 
     connection!: DataConnection;
@@ -9,6 +10,12 @@ export class Client {
     name: string = '';
 
     names: string[] = [];
+    eventLog: AnyEventObject[] = [];
+
+    outMessages: Message[] = [];
+    inMessages: Message[] = [];
+
+    #xstate?: AnyActorRef;
 
     previousActionId: string = '';
 
@@ -68,8 +75,10 @@ export class Client {
             console.log("Client connected to: " + this.connection.peer);
 
             this.connection.on('data', (data) => {
-                const message = data as Message;
-                this.receive(message);
+                console.group("connection.onData")
+                console.log('raw', data)
+                this.receive(data);
+                console.groupEnd()
             });
 
             this.connection.on('close', () => {
@@ -84,6 +93,7 @@ export class Client {
     send(data: Message) {
         this.previousActionId = data.id;
         if (this.connection && this.connection.open) {
+            this.outMessages.push(data)
             this.connection.send(data);
             console.log("Client sending data ", JSON.stringify(data, null, 4));
         } else {
@@ -92,9 +102,11 @@ export class Client {
     }
 
     receive(message: Message) {
-        // console.log("Client received message ", message.type);
-        if (message.id === this.previousActionId) {
-            console.log("Received own message, ignoring.")
+        console.log("Client received message ", message);
+        if (this.outMessages.map(message => message.id).includes(message.id)) {
+            const lastSent = this.outMessages[this.outMessages.length -1]
+            console.debug("My Message!", message);
+            console.debug("fyi last sent", lastSent);
             return;
         }
         switch(message.type) {
@@ -105,10 +117,26 @@ export class Client {
 
                 this.names = message.data.names;
                 break;
-            case "incrementEventAction":
-                // getGameMachine().send(
-                //     {type: "increment"}
-                // )
+            case "xstate":
+                console.group("replaying xstate message")
+                console.log(message)
+                message.data.value = message.id
+                this.eventLog.push(message.data)
+                this.xstate?.send(message.data);
+                console.groupEnd()
+                break;
         }
     }
+
+    set xstate(actor: AnyActorRef) {
+        // Any setup code you want
+        this.eventLog = [];  // Reset replication log
+        this.#xstate = actor;
+    }
+    get xstate() {
+        // Any setup code you want
+        return this.#xstate;
+    }
 }
+
+export const client = new Client(null);
