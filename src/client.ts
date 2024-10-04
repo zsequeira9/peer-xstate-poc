@@ -76,7 +76,6 @@ class Client {
 
             this.connection.on('data', (data) => {
                 console.group("connection.onData")
-                console.log('raw', data)
                 this.receive(data);
                 console.groupEnd()
             });
@@ -120,7 +119,7 @@ class Client {
             case "xstate":
                 console.group("replaying xstate message")
                 console.log(message)
-                message.data.value = message.id
+                message.data.replicationId = message.id
                 this.eventLog.push(message.data)
                 this.xstate?.send(message.data);
                 console.groupEnd()

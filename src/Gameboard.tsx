@@ -21,12 +21,11 @@ const inspectionProcessor = (inspectionEvent: InspectionEvent) => {
         }
         if (inspectionEvent.event.type.includes('xstate')) {
             console.log("ignoring Internal xstate event", inspectionEvent.event)
-        } else if (inspectionEvent.event.value) {
+        } else if (inspectionEvent.event.replicationId) {
             console.log("This is a replayed event, don't bubble it");
         } else {
             console.log("Event triggered by a human (client didn't add the ID when receiving)");
-            const message = new XstateEventAction()
-            message.data = inspectionEvent.event
+            const message = new XstateEventAction(inspectionEvent.event);
             client.send(message)
         }
         console.groupEnd()
@@ -103,15 +102,17 @@ export default function Gameboard({MachineLogic: MachineLogic}: GameboardProps){
     })
 
     // Player Buttons
-    const PlayerButtons = snapshot.context.childMachineRefs.map((child: AnyActorRef) => 
-        <li key={child.id}>
+    const PlayerButtons = Object.entries(players).map(([playerid, player]) => {
+        const playerRef = Object.values(snapshot.context.childMachineRefs).find((child: AnyActorRef) => child.id === playerid);
+        console.log("I am ", playerid, "I am in state ", player.value);
+        return <li key={playerid}>
             <button 
-                // somehow this updates when also getting child snapshots with useEffect
-                disabled={ child.getSnapshot().value === 'waiting' }
-                onClick={() => { child.send({type: 'playButton' })}}>
-                {child.id}
+                disabled={ player.value === 'waiting' }
+                onClick={() => { playerRef.send({type: 'playButton' })}}>
+                {playerid}
             </button>
-        </li>)
+        </li>
+    })
 
     return (
         <main> 

@@ -15,6 +15,9 @@ export class XstateEventAction implements Message {
     id: string = uuidv4();
     type: MessageType = "xstate";
     data: AnyEventObject;
+    constructor(data: AnyEventObject) {
+        this.data = data;
+    }
 }
 
 
