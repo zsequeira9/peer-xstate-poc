@@ -120,7 +120,7 @@ class Client {
                 console.group("replaying xstate message")
                 console.log(message)
                 message.data.replicationId = message.id
-                this.eventLog.push(message.data)
+                this.eventLog.push(message.data);
                 this.xstate?.send(message.data);
                 console.groupEnd()
                 break;

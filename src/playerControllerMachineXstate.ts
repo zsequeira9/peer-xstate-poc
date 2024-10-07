@@ -83,7 +83,8 @@ export function createGameMachine(names: string[]){
     }
 
     on['start'] = {actions: sendTo(names[0], {type: 'startTurn'})}
-    // on['start'] = {actions: log('start event')};
+
+    on['playButton'] = {actions: sendTo(({event}) => event.player, ({event}) => {return {type: 'playButton', replicationId: event.replicationId}})}
 
     __gameMachine =  createMachine({
             entry: [assign({childMachineRefs})], 
