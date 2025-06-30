@@ -76,7 +76,7 @@ class Client {
 
             this.connection.on('data', (data) => {
                 console.group("connection.onData")
-                this.receive(data);
+                this.receive(data as Message);
                 console.groupEnd()
             });
 
@@ -132,7 +132,7 @@ class Client {
         this.eventLog = [];  // Reset replication log
         this.#xstate = actor;
     }
-    get xstate() {
+    get xstate(): AnyActorRef | undefined {
         // Any setup code you want
         return this.#xstate;
     }

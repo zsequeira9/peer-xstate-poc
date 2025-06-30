@@ -6,15 +6,18 @@ interface scoreCard {
     score: number
 }
 
+type startTurnEvent = { type: 'startTurn' } 
+type playButtonEvent = { type: 'playButton'; player: string; replicationId?: number }
+
+type childEvent = startTurnEvent | playButtonEvent
+
 type spawnFunction = (actorBehavior: AnyActorLogic, {}) => {}
 
 export const ChildControllerMachine = setup({
     types: {
         context: {} as {controller: scoreCard},
         input: {} as scoreCard,
-        events: {} as 
-            | { type: 'playButton' }
-            | { type: 'startTurn' }
+        events: {} as childEvent,
     },
     actions: {
         addRandomScore: assign(({context}) => {
@@ -84,7 +87,7 @@ export function createGameMachine(names: string[]){
 
     on['start'] = {actions: sendTo(names[0], {type: 'startTurn'})}
 
-    on['playButton'] = {actions: sendTo(({event}) => event.player, ({event}) => {return {type: 'playButton', replicationId: event.replicationId}})}
+    on['playButton'] = {actions: sendTo(({event}: {event: playButtonEvent}) => event.player, ({event}: {event: playButtonEvent}) => {return {type: 'playButton', replicationId: event.replicationId}})}
 
     __gameMachine =  createMachine({
             entry: [assign({childMachineRefs})], 

@@ -105,9 +105,9 @@ export default function Gameboard({MachineLogic: MachineLogic}: GameboardProps){
     const PlayerButtons = Object.entries(players).map(([playerid, player]) => {
         const playerRef = Object.values(snapshot.context.childMachineRefs).find((child: AnyActorRef) => child.id === playerid);
         return <li key={playerid}>
-            <button 
+            <button
                 disabled={ player.value === 'waiting' }
-                onClick={() => { playerRef.send({type: 'playButton', player: playerid })}}>
+                onClick={() => { playerRef?.send({type: 'playButton', player: playerid })}}>
                 {playerid}
             </button>
         </li>
